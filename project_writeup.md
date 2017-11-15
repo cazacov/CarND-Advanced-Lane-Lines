@@ -30,7 +30,7 @@ The code is stored in Jupyter Notebook named "project.ipynb" and has exactly the
 
 ## 2. Apply a distortion correction to raw images. ##
 
-To test the distortion compensation matrix I applied to all 20 images provided with the project and the result looks pretty well:
+To test the distortion compensation matrix I applied it to all 20 images provided with the project and the result looks pretty well:
 
 <img src="./img/undistorted_all.png" />
 
@@ -45,36 +45,37 @@ The R channel is good to find both white and yellow lines on a dark surface. Aft
 <img src="./img/red.jpg" />
 
 Unfortunately it does now work so well on bright parts of the road:
+
 <img src="./img/red2.jpg" />
 
 Still the R channel will be useful, so I extract it and transform to binary mask with threshold 128.
 
-Next source of information is the S channel of HLS color space. The channel contains color information and is not so affected by light and shadows:
+Next source of information is the S channel of the HLS color space. The channel contains color information and is not so affected by light and shadows:
 
 <img src="./img/s.jpg" />
 
-To make picture more contrast I first do histogram equalization with a function from OpenCV library.
+To get higher contrast I first do histogram equalization with OpenCV library.
 Then it's also converted to binary mask with the same threshold value 128.
 
-The S channel can also have false positive pixels in shadow but they do not correlate with false positives in red channel.
+The S channel is also not perfect and can have false positive pixels in shadow but they do not correlate with false positives in the red channel.
 
-To filter out these false positives I do bitwise AND operation of binary R and S channels. That gives me white pixels only in places where both R and S have values above the threshold.
+To filter out these false positives I do bitwise AND operation of binary R and S channels. That gives me white pixels only in places where both R and S channels have values above the threshold.
 That's done in Python function "combine_and", source code block 3.
 
-That mask has almost no false white pixels, but sometimes also drops the right line that has white color and looks pretty dark in S channel.
+That mask has almost no false white pixels, but sometimes also drops the right line that has white color and can be pretty dark in the S channel.
 
 Next step is to add pixels using gradient detection. First I apply Sobel operator in X and Y directions and then calculate the full gradient in diagonal direction. I have chosen diagonal direction because for the further line detection it is important to have clear lines in the bottom part of the image and these lines are almost diagonal:
 <img src="./img/diagonal_gradient.jpg" />
 
 To calculate it I add gradients in X and Y directions multiplied by sqrt(2)/2.
 
-I also calculate the slope of the gradient vector to filter out almost horizontal lines. Here I had a bug that cost me a lot of time: I mistakenly dropped values with angle below 30 degrees. The right solution is to drop points with gradient with angles > 60 degrees because near horizontal lines have almost vertical gradient with angle close to 90 (or pi/2 in radian).
+I also calculate the slope of the gradient vector to remove almost horizontal lines. Here I had a bug that cost me a lot of time: I mistakenly dropped values with angle below 30 degrees. The right solution is to drop points with gradient with angles > 60 degrees because horizontal lines have almost vertical gradient with the angle close to 90 (or pi/2 in radian).
 
 That's all done in function  gradient_xy, code block 3.1.
 
 I already used data from R and S channels above, so I decided to calculate gradient of L channel in the HLS color space.
 
-Even after normalization into range 0..255 the gradient values can vary a lot, so I apply a much lower threshold 60 to convert it to binary mask.
+Even after normalization in range 0..255 the gradient values can vary a lot, so I apply a much lower threshold 60 to convert it to binary mask.
 
 Finally I combine it using OR bitwise operator with the R AND S bit mask calculated before.
 
@@ -107,7 +108,7 @@ To figure out what is the best combination of image transformations I did a lot 
 
 ## 4. Apply a perspective transform to rectify binary image ("birds-eye view"). ##
 
-The OpenCV library has built-in functions for perspective transformations, so I had only to find an image with straight lines, manually mark four reference points and tell OpenCV to find a matrix transforming them into rectangle. I decided to keep the output image size the same and let 300 pixel margins on the left and right sides of the warped image.
+The OpenCV library has built-in functions for perspective transformations, so I had only to choose an image with straight lines, manually mark four reference points and then tell OpenCV to find a matrix transforming them into rectangle. I decided to keep the output image size the same and let 300 pixel margins on the left and right sides of the warped image.
 
 Here is my reference image:
 <img src='./img/perspective.jpg'/>
@@ -128,7 +129,7 @@ The algorithm is sensible to picture quality in the bottom part of the image, so
 3. Check  if lines are clearly visible on all images
 4. Repeat
 
-The algorithm first uses histogram to detect two peaks in the bottom part of the image and then goes up steps detecting pixels in windows. Initial window position is based on previous results and is then re-centered based on the mean position of found pixels.
+The algorithm first uses histogram to detect two peaks in the bottom part of the image and then goes up in steps detecting pixels in windows. Initial window position is based on previous results and is then re-centered based on the mean position of found pixels.
 See code block 5. I took it directly from the Udacity materials.
 
 The next step was more interesting. Once we know approximate line position, it's enough to take white pixels in a corridor of 100 pixeles left and right to the line and apply the Numpy polyfit function to find the best fitting polynomial coefficients.
@@ -153,7 +154,7 @@ See code block 6.
 
 ## 7. Warp the detected lane boundaries back onto the original image. ##
 
-In step 4 I calculated transformation matrix to covert source image into a bird-eye view. If I swap its arguments, it returns me the inverse matrix that I can use to transform values back into source image coordinates.
+In step 4 I calculated transformation matrix to covert source image into a bird-eye view. If I swap its arguments it returns me the inverse matrix that I can use to transform values back into source image coordinates.
    
 The function draw_measurement calculates marking lines coordinates using polynomial approximation and draws the resulting lane polygon back on the source image.
 
@@ -161,7 +162,7 @@ The function draw_measurement calculates marking lines coordinates using polynom
 
 ## 8. Show numerical estimation of lane curvature and vehicle position ##
 
-Finally I use OpenCV function putText to print lane radius and vehicle position on the upper part of the source image.
+Finally I use OpenCV function putText to print lane radius and vehicle position on the upper part of the source image. Curves with the calculated radius of 10 or more kilometers are considered to be straight.
 
 See function map_lane in the code block 8.
 
@@ -169,11 +170,11 @@ See function map_lane in the code block 8.
 
 ## 9. Generate video with the pipeline designed above. ## 
 
-Once I got the pipeline working, I took the code from my previous project CarND-LaneLines-P1 to apply it to every frame in the project video. The result is checked-in in file project_video_output.mp4.
+Once I got the pipeline working, I took the code from my previous project CarND-LaneLines-P1 to apply the pipeline to every frame in the project video. The result is checked-in in file project_video_output.mp4.
 
 The frame processing code uses low pass filter to reduce jitter. It also tries to use faster incremental line finding algorithm if data quality from previous frame is estimated to be 90% or better.
 
-In case of unrealistic outputs like line coordinate more than 1000 pixels away from the image center, the frame is treated as outlier and does not contribute to the coordinate change. I also save outliers in file system for further analysis. That helped me to find combination of color transformations that detect lines on all frames of project video. 
+In case of unrealistic outputs like line coordinate more than 1000 pixels away from the image center, the frame is treated as outlier and does not contribute to the coordinate change. I also save outliers in file system for further analysis. That helped me to find combination of color transformations that successfully detects lines on all frames of the project video. 
 
 <video width="1280" height="720" controls>
   <source src="project_video_output.mp4">
@@ -184,7 +185,7 @@ In case of unrealistic outputs like line coordinate more than 1000 pixels away f
 The optional challenge video is more challenging and here I currently get 78 outlier frames from 485 (success rate 84%).
 
 ### Search for lanes on a "flat" image ###
-I think the most will bring applying gradient detection to the bird-eye image instead of applying it before warping as required in this project. That will allow smarter filtering based on gradient direction. Current filtering based only on direction without considering pixel position is not so efficient because it has to accept gradients also were they make no sense only because the same direction is allowed in other parts of the image..
+One improvement will be applying gradient detection to the bird-eye image instead of applying it to the source image before warping as required in this project. That will allow smarter filtering based on gradient direction. Current filtering based only on direction without considering pixel position is not so efficient because it has to accept gradients where they make no sense only because the same direction is allowed in other parts of the image..
 
 <img src='./img/gradient_filtering.jpg'/>
 
@@ -192,7 +193,7 @@ Also using warped images will provide approximately the same line width in all p
 
 ### Preventing false positives ###
 
-Exploring outlier images from the challenge video I noticed my algorithm falsely detecting dark lines on the road. I think the solution would be the AND combination of gradient and grayscale images. Gray images are not suitable for line detection in light areas, but at least they can provide information about dark spots that are definitely not lane markers.
+Exploring outlier images from the challenge video I noticed that my algorithm falsely detects dark lines on the road. I think the solution would be the AND combination of gradient and grayscale images. Gray images are not suitable for line detection in light areas, but at least they can provide information about dark spots that are definitely not lane markers.
 
 <img src='./img/false_positive.jpg'/>
        
