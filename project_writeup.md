@@ -17,7 +17,7 @@ The code is stored in Jupyter Notebook named "project.ipynb" and has exactly the
  
  Project contains sample images of a chessboard taken with the car camera. OpenCV function findChessboardCorners finds corners and returns them as array. These image points should match reference object points. The grid of object points is generated with numpy function mgrid.
  
- List of ideal object points and the list of real image points captured by camera are then passed to the OpenCV function calibrateCamera that automatically calculates transformation tht should compensate camera lens distortion.
+ List of ideal object points and the list of real image points captured by camera are then passed to the OpenCV function calibrateCamera that automatically calculates transformation that should compensate camera lens distortion.
  
  The transformation matrix is stored in Python variable "mtx" for following calculations.
  
@@ -30,7 +30,7 @@ The code is stored in Jupyter Notebook named "project.ipynb" and has exactly the
 
 ## 2. Apply a distortion correction to raw images. ##
 
-To test the distortion compensation matrix I applied to all 20 images provided with the project and teh result looks pretty well:
+To test the distortion compensation matrix I applied to all 20 images provided with the project and the result looks pretty well:
 
 <img src="./img/undistorted_all.png" />
 
@@ -54,7 +54,7 @@ Next source of information is the S channel of HLS color space. The channel cont
 <img src="./img/s.jpg" />
 
 To make picture more contrast I first do histogram equalization with a function from OpenCV library.
-Then it 's also converted to binary mask with the same threshold value 128.
+Then it's also converted to binary mask with the same threshold value 128.
 
 The S channel can also have false positive pixels in shadow but they do not correlate with false positives in red channel.
 
@@ -66,7 +66,7 @@ That mask has almost no false white pixels, but sometimes also drops the right l
 Next step is to add pixels using gradient detection. First I apply Sobel operator in X and Y directions and then calculate the full gradient in diagonal direction. I have chosen diagonal direction because for the further line detection it is important to have clear lines in the bottom part of the image and these lines are almost diagonal:
 <img src="./img/diagonal_gradient.jpg" />
 
-To calculate it I add gradients in X and Y direction multiplied by sqrt(2)/2.
+To calculate it I add gradients in X and Y directions multiplied by sqrt(2)/2.
 
 I also calculate the slope of the gradient vector to filter out almost horizontal lines. Here I had a bug that cost me a lot of time: I mistakenly dropped values with angle below 30 degrees. The right solution is to drop points with gradient with angles > 60 degrees because near horizontal lines have almost vertical gradient with angle close to 90 (or pi/2 in radian).
 
@@ -113,14 +113,15 @@ Here is my reference image:
 <img src='./img/perspective.jpg'/>
 
 And here the same image after applying the transformation:
+
 <img src='./img/perspective_out.png'/>
 
 
 ## 5. Detect lane pixels and fit to find the lane boundary. ##
 
-To get polynomial approximation of lane lines I used histogram peaks finding algorithm as proposed in Udacity chapter 33.
+To get polynomial approximation of lane lines I took histogram peaks finding algorithm as proposed in Udacity chapter 33.
 
-The algorithm is sensible to picture quality in the bottom sid of the image, so I spend a lot of time refining binarization of images described above. Really my workflow was:
+The algorithm is sensible to picture quality in the bottom part of the image, so I spent a lot of time refining binarization of images described above. My workflow was the following:
 
 1. Choose color transformations, their combinations and thresholds
 2. Pre-process test images
@@ -130,7 +131,7 @@ The algorithm is sensible to picture quality in the bottom sid of the image, so 
 The algorithm first uses histogram to detect two peaks in the bottom part of the image and then goes up steps detecting pixels in windows. Initial window position is based on previous results and is then re-centered based on the mean position of found pixels.
 See code block 5. I took it directly from the Udacity materials.
 
-The next step was more interesting. Once we know approximate line position, it's enough to take white pixels in a corridor of 100 pixles left and right to the line and apply the Numpy polyfit function to find the best fitting polynomial coeffecients.
+The next step was more interesting. Once we know approximate line position, it's enough to take white pixels in a corridor of 100 pixeles left and right to the line and apply the Numpy polyfit function to find the best fitting polynomial coefficients.
 The function find_lines_incremental is much easier to read and understand. 
 
 Both find_lines_with_histogram and find_lines_incremental functions try to estimate the quality of results. That value will be used later to drop outliers.
@@ -138,15 +139,15 @@ As a simplest estimation I count the number of white pixels that were used for p
 
 The code is in blocks 5.2 and 5.3. To test it I first use find_lines_with_histogram and then apply find_lines_incremental to the same image. As expected, both functions return very close values.
 
-The visulization code from Udacity uses a smart combination of Numpy functions that are very efficient on multicore CPUs. It's fast, but not very readable for juniors in Python. In code block 5.3 I provide my own function to draw detected lines that uses two nested loops. It's slow and takes almost 2 seconds to calculate single image, but I find it be more readable. 
+The visualization  code from Udacity uses a smart combination of Numpy functions that are very efficient on multicore CPUs. It's fast, but not very readable for juniors in Python. In code block 5.3 I provide my own function to draw detected lines that uses two nested loops. It's slow and takes almost 2 seconds to calculate single image, but I find it be more readable. 
 
 <img src='./img/find_lines.png'/> 
 
 ## 6. Determine the curvature of the lane and vehicle position with respect to center ##
 
-It's hard to say how big in the real world is the rectangle I used for bird-eye transformation, so I estimated it to be 50 meters long and 3.7 meters wide. Then I apply curvature calculation formula to estimate the curve radius. I do not know how to pu LaTeX blocks in Markdown files, but you can check it in my project Jupyter Notebook.
+It's hard to say how big in the real world is the rectangle I used for bird-eye transformation, so I estimated it to be 50 meters long and 3.7 meters wide. Then I apply curvature calculation formula to estimate the curve radius. I do not know how to put LaTeX blocks in Markdown files, but you can check it in my project Jupyter Notebook.
 
-The calculation of lane curvature and vehicle position are incapsulated in the FrameInfo class that I will use a lot in video processing.
+The calculation of lane curvature and vehicle position are encapsulated  in the FrameInfo class that I will use a lot in video processing.
 
 See code block 6.
 
@@ -172,7 +173,7 @@ Once I got the pipeline working, I took the code from my previous project CarND-
 
 The frame processing code uses low pass filter to reduce jitter. It also tries to use faster incremental line finding algorithm if data quality from previous frame is estimated to be 90% or better.
 
-In case of unrealistic outputs like line coordinate more than 1000 pixels away from the image center, the frame is treated as outlier and does not contribute to the coordinate change. I also save outliers in file system for further analysis. That helped me to find combination of color transformations that detect lines on all frames of project video. The optional challenge video is more challenging and here I currently get 78 outlier frames from 485 (success rate 84%).
+In case of unrealistic outputs like line coordinate more than 1000 pixels away from the image center, the frame is treated as outlier and does not contribute to the coordinate change. I also save outliers in file system for further analysis. That helped me to find combination of color transformations that detect lines on all frames of project video. 
 
 <video width="1280" height="720" controls>
   <source src="project_video_output.mp4">
@@ -180,12 +181,14 @@ In case of unrealistic outputs like line coordinate more than 1000 pixels away f
 
 ## 10. Possible improvements ##
 
-### Search for lanes on a "flat" image ###
-I think the most will bring applying gradient detection to the bird-eye image instead of applying it before warping as required in this project. That will allow more smart filtering based on gradient direction. Current filtering based only on direction without considering pixel position is not so efficient.
+The optional challenge video is more challenging and here I currently get 78 outlier frames from 485 (success rate 84%).
 
-Also using warped images will provide aproximatelly the same line width in all parts of the image, which will allow better choosing Sobel kernel size.         
+### Search for lanes on a "flat" image ###
+I think the most will bring applying gradient detection to the bird-eye image instead of applying it before warping as required in this project. That will allow smarter filtering based on gradient direction. Current filtering based only on direction without considering pixel position is not so efficient because it has to accept gradients also were they make no sense only because the same direction is allowed in other parts of the image..
 
 <img src='./img/gradient_filtering.jpg'/>
+
+Also using warped images will provide approximately the same line width in all parts of the image, which will allow better choosing Sobel kernel size.
 
 ### Preventing false positives ###
 
